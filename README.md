@@ -253,6 +253,8 @@ npx skills add rookie-ricardo/erduo-skills
 
 欢迎贡献新技能！每个技能是 `skills/` 下的独立目录，包含 `SKILL.md`（技能定义）和相关脚本/资源。
 
+[![Star History Chart](https://api.star-history.com/svg?repos=rookie-ricardo/erduo-skills&type=Date)](https://www.star-history.com/#rookie-ricardo/erduo-skills&Date)
+
 ---
 
 *Created with ❤️ by Erduo*
