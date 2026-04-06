@@ -1,0 +1,23 @@
+{
+  "name": "web-to-markdown-skill",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Routing and extraction scripts for web-to-markdown skill.",
+  "scripts": {
+    "convert": "node scripts/url_to_markdown.mjs",
+    "convert:special": "node scripts/fetch_special_sites.mjs",
+    "convert:special:http": "node scripts/fetch_special_sites_http.mjs",
+    "convert:generic": "node scripts/fetch_generic_fallback.mjs"
+  },
+  "dependencies": {
+    "@mozilla/readability": "^0.5.0",
+    "cuimp": "^1.10.0",
+    "jsdom": "^24.1.3",
+    "puppeteer": "^24.6.1",
+    "puppeteer-extra": "^3.3.6",
+    "puppeteer-extra-plugin-anonymize-ua": "^2.4.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2",
+    "turndown": "^7.2.0"
+  }
+}

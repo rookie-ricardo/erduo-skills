@@ -22,6 +22,7 @@ npx skills add rookie-ricardo/erduo-skills
 | [AK RSS Digest](#-ak-rss-digest) | 固定 RSS 源精选摘要，10 分制打分过滤 | Agent 调用 / CLI |
 | [转录精修师](#-转录精修师) | 语音转录文本 → 可读文章，保留原汁原味 | Agent 调用 |
 | [翻译精修师](#-翻译精修师) | 四步精翻工作流，支持中英 / 中日双向精翻 | Agent 调用 |
+| [Web To Markdown](#-web-to-markdown) | URL 路由抓取 + Readability 清洗，输出干净 Markdown | Agent 调用 / CLI |
 | [Gemini 水印移除](#-gemini-水印移除) | 逆向 Alpha 混合去除 Gemini 图片水印 | CLI |
 
 ---
@@ -159,6 +160,29 @@ npx skills add rookie-ricardo/erduo-skills --skill translate-polisher
 
 ---
 
+## 🔗 Web To Markdown
+
+```bash
+npx skills add rookie-ricardo/erduo-skills --skill web-to-markdown
+```
+
+将 URL 按站点类型路由到对应抓取策略，统一输出可读 Markdown，适合给后续 Agent 继续分析、翻译或摘要。
+
+- 通用网页与 X/Twitter 默认走 `r.jina.ai`
+- YouTube 链接走 `defuddle.md` 提取字幕/正文
+- 微信公众号、知乎、飞书走 `cuimp` Chrome 指纹 HTTP 抓取，失败时自动降级浏览器提取
+- 内置通用兜底链路：`r.jina.ai` 失败后会尝试直连抓取 + Mozilla Readability，再尝试浏览器提取
+- 支持 `--json` 输出策略、来源与归一化 URL 等元数据
+
+```bash
+cd skills/web-to-markdown
+npm install
+node scripts/url_to_markdown.mjs <url>
+node scripts/url_to_markdown.mjs <url> --json
+```
+
+---
+
 ## 🖼 Gemini 水印移除
 
 ```bash
@@ -199,6 +223,10 @@ erduo-skills/
 │   │   └── references/
 │   ├── translate-polisher/         # 翻译精修师
 │   │   ├── SKILL.md
+│   │   └── references/
+│   ├── web-to-markdown/            # Web To Markdown
+│   │   ├── SKILL.md
+│   │   ├── scripts/
 │   │   └── references/
 │   └── gemini-watermark-remover/   # Gemini 水印移除
 │       ├── SKILL.md

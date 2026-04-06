@@ -22,6 +22,7 @@ npx skills add rookie-ricardo/erduo-skills
 | [AK RSS Digest](#-ak-rss-digest) | Curated RSS digest with 10-point scoring | Agent / CLI |
 | [Transcript Polisher](#-transcript-polisher) | Speech transcript → readable article, preserving original voice | Agent |
 | [Translate Polisher](#-translate-polisher) | 4-step publication-quality translation for ZH↔EN and ZH↔JA | Agent |
+| [Web To Markdown](#-web-to-markdown) | URL routing + Readability cleanup for clean markdown extraction | Agent / CLI |
 | [Gemini Watermark Remover](#-gemini-watermark-remover) | Reverse alpha blending to remove Gemini image watermarks | CLI |
 
 ---
@@ -156,6 +157,29 @@ For high-quality article translation and localization, using a 4-step workflow: 
 
 ---
 
+## 🔗 Web To Markdown
+
+```bash
+npx skills add rookie-ricardo/erduo-skills --skill web-to-markdown
+```
+
+Routes each URL to a source-aware extraction strategy and returns clean markdown for downstream agent tasks such as summarization, translation, and review.
+
+- General pages and X/Twitter use `r.jina.ai` by default
+- YouTube URLs use `defuddle.md` for transcript-oriented extraction
+- WeChat, Zhihu, and Feishu use `cuimp` Chrome-impersonated HTTP fetching, then auto-fallback to browser extraction when needed
+- Built-in generic fallback chain: if `r.jina.ai` fails, try direct fetch + Mozilla Readability, then browser extraction
+- Supports `--json` metadata output (`strategy`, `source`, normalized URL, and markdown)
+
+```bash
+cd skills/web-to-markdown
+npm install
+node scripts/url_to_markdown.mjs <url>
+node scripts/url_to_markdown.mjs <url> --json
+```
+
+---
+
 ## 🖼 Gemini Watermark Remover
 
 ```bash
@@ -196,6 +220,10 @@ erduo-skills/
 │   │   └── references/
 │   ├── translate-polisher/         # Translate Polisher
 │   │   ├── SKILL.md
+│   │   └── references/
+│   ├── web-to-markdown/            # Web To Markdown
+│   │   ├── SKILL.md
+│   │   ├── scripts/
 │   │   └── references/
 │   └── gemini-watermark-remover/   # Gemini Watermark Remover
 │       ├── SKILL.md

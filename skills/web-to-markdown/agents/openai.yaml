@@ -1,0 +1,4 @@
+interface:
+  display_name: "Web to Markdown"
+  short_description: "Convert URLs to clean Markdown via smart routing."
+  default_prompt: "Convert the provided URL into clean markdown using web-to-markdown routing rules."
