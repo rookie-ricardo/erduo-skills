@@ -5,7 +5,9 @@
  * Downloads images from markdown content and replaces URLs with local paths
  */
 
+import process from 'node:process';
 import fs from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 
@@ -27,6 +29,9 @@ const HTML_IMG_REGEX = /<img[^>]+src=["']([^"']+)["'][^>]*>/gi;
 const DEFAULT_USER_AGENT =
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36';
 
+const DEFAULT_ACCEPT_LANGUAGE = 'zh-CN,zh;q=0.9,en;q=0.8';
+const IMAGE_ACCEPT = 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8';
+
 /**
  * Maximum image size (10MB) to prevent memory issues
  */
@@ -43,6 +48,9 @@ const DEFAULT_TIMEOUT_MS = 15000;
 const IMAGE_EXTENSIONS = new Set([
   '.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.bmp', '.ico'
 ]);
+
+let cuimpImageClientPromise = null;
+let puppeteerConfigured = false;
 
 /**
  * Generate a unique filename from URL to avoid collisions
@@ -97,6 +105,254 @@ function resolveConcurrencyLimit(value) {
   return Math.floor(concurrency);
 }
 
+function resolveReferer(imageUrl, pageUrl) {
+  if (pageUrl) {
+    try {
+      return new URL(pageUrl).toString();
+    } catch {
+      // Fall through to image origin fallback.
+    }
+  }
+
+  return `${new URL(imageUrl).origin}/`;
+}
+
+function buildImageHeaders(imageUrl, pageUrl) {
+  return {
+    'user-agent': DEFAULT_USER_AGENT,
+    accept: IMAGE_ACCEPT,
+    'accept-language': DEFAULT_ACCEPT_LANGUAGE,
+    'cache-control': 'no-cache',
+    pragma: 'no-cache',
+    referer: resolveReferer(imageUrl, pageUrl)
+  };
+}
+
+function getHeader(headers, name) {
+  return headers?.[name] || headers?.[name.toLowerCase()] || headers?.[name.toUpperCase()] || '';
+}
+
+function ensureImageContentType(contentType) {
+  if (!contentType.startsWith('image/')) {
+    throw new Error(`Not an image: ${contentType || 'unknown content-type'}`);
+  }
+}
+
+function ensureImageBufferSize(buffer) {
+  if (buffer.length > MAX_IMAGE_SIZE) {
+    throw new Error('Downloaded image too large (>10MB)');
+  }
+}
+
+function getRawBodyBuffer(response) {
+  if (Buffer.isBuffer(response?.rawBody)) {
+    return response.rawBody;
+  }
+
+  if (response?.rawBody) {
+    return Buffer.from(response.rawBody);
+  }
+
+  if (Buffer.isBuffer(response?.data)) {
+    return response.data;
+  }
+
+  if (response?.data instanceof Uint8Array) {
+    return Buffer.from(response.data);
+  }
+
+  return Buffer.alloc(0);
+}
+
+async function getCuimpImageClient() {
+  if (!cuimpImageClientPromise) {
+    cuimpImageClientPromise = import('cuimp').then(({ createCuimpHttp }) =>
+      createCuimpHttp({
+        descriptor: { browser: 'chrome', version: '136' },
+        autoDownload: true,
+        logger: {
+          info: () => {},
+          warn: () => {},
+          error: () => {},
+          debug: () => {}
+        }
+      })
+    );
+  }
+
+  return cuimpImageClientPromise;
+}
+
+async function primeCuimpSession(pageUrl, timeoutMs) {
+  if (!pageUrl) {
+    return;
+  }
+
+  const cuimpClient = await getCuimpImageClient();
+  await cuimpClient.request({
+    url: pageUrl,
+    method: 'GET',
+    timeout: timeoutMs,
+    maxRedirects: 20,
+    headers: {
+      'user-agent': DEFAULT_USER_AGENT,
+      accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      'accept-language': DEFAULT_ACCEPT_LANGUAGE,
+      'cache-control': 'no-cache',
+      pragma: 'no-cache',
+      referer: pageUrl
+    }
+  });
+}
+
+async function getBrowserModules() {
+  const [puppeteerModule, stealthModule, anonymizeModule] = await Promise.all([
+    import('puppeteer-extra'),
+    import('puppeteer-extra-plugin-stealth'),
+    import('puppeteer-extra-plugin-anonymize-ua')
+  ]);
+
+  const puppeteer = puppeteerModule.default;
+  const StealthPlugin = stealthModule.default;
+  const AnonymizeUAPlugin = anonymizeModule.default;
+
+  if (!puppeteerConfigured) {
+    puppeteer.use(StealthPlugin());
+    puppeteer.use(
+      AnonymizeUAPlugin({
+        customFn: () => DEFAULT_USER_AGENT,
+        stripHeadless: true
+      })
+    );
+    puppeteerConfigured = true;
+  }
+
+  return puppeteer;
+}
+
+function resolveChromeExecutablePath() {
+  const candidates = [
+    process.env.CHROME_PATH,
+    'C:/Program Files/Google/Chrome/Application/chrome.exe',
+    'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe',
+    'C:/Program Files/Microsoft/Edge/Application/msedge.exe',
+    '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+    '/Applications/Chromium.app/Contents/MacOS/Chromium',
+    '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge'
+  ].filter(Boolean);
+
+  return candidates.find((candidate) => existsSync(candidate));
+}
+
+async function createBrowserFallbackSession(pageUrl, timeoutMs) {
+  const puppeteer = await getBrowserModules();
+  const browser = await puppeteer.launch({
+    headless: true,
+    executablePath: resolveChromeExecutablePath(),
+    args: [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage',
+      '--disable-blink-features=AutomationControlled'
+    ]
+  });
+
+  const page = await browser.newPage();
+  await page.setUserAgent(DEFAULT_USER_AGENT);
+  await page.setViewport({ width: 1440, height: 2200, deviceScaleFactor: 2 });
+  await page.setExtraHTTPHeaders({
+    'accept-language': DEFAULT_ACCEPT_LANGUAGE,
+    'sec-ch-ua': '"Chromium";v="123", "Google Chrome";v="123", "Not:A-Brand";v="8"',
+    'sec-ch-ua-mobile': '?0',
+    'sec-ch-ua-platform': '"macOS"'
+  });
+
+  if (pageUrl) {
+    await page.goto(pageUrl, {
+      waitUntil: 'domcontentloaded',
+      timeout: timeoutMs
+    });
+  }
+
+  return { browser, page };
+}
+
+async function downloadImageWithCuimp(imageUrl, outputPath, options = {}) {
+  const timeoutMs = options.timeoutMs || DEFAULT_TIMEOUT_MS;
+  const cuimpClient = await getCuimpImageClient();
+  const response = await cuimpClient.request({
+    url: imageUrl,
+    method: 'GET',
+    timeout: timeoutMs,
+    maxRedirects: 20,
+    headers: buildImageHeaders(imageUrl, options.pageUrl)
+  });
+
+  const statusCode = Number(response.status || 0);
+  if (statusCode < 200 || statusCode >= 300) {
+    throw new Error(`HTTP ${statusCode || 'request failed'}`);
+  }
+
+  const contentType = getHeader(response.headers, 'content-type');
+  ensureImageContentType(contentType);
+
+  const contentLength = getHeader(response.headers, 'content-length');
+  if (contentLength && parseInt(contentLength, 10) > MAX_IMAGE_SIZE) {
+    throw new Error('Image too large (>10MB)');
+  }
+
+  const buffer = getRawBodyBuffer(response);
+  if (!buffer.length) {
+    throw new Error('Image response body was empty');
+  }
+
+  ensureImageBufferSize(buffer);
+  await fs.writeFile(outputPath, buffer);
+}
+
+async function downloadImageWithBrowser(imageUrl, outputPath, options = {}, browserSession) {
+  const timeoutMs = options.timeoutMs || DEFAULT_TIMEOUT_MS;
+  const session = browserSession || (await createBrowserFallbackSession(options.pageUrl, timeoutMs));
+
+  await session.page.setExtraHTTPHeaders({
+    ...buildImageHeaders(imageUrl, options.pageUrl),
+    'sec-ch-ua': '"Chromium";v="123", "Google Chrome";v="123", "Not:A-Brand";v="8"',
+    'sec-ch-ua-mobile': '?0',
+    'sec-ch-ua-platform': '"macOS"'
+  });
+
+  const response = await session.page.goto(imageUrl, {
+    waitUntil: 'networkidle2',
+    timeout: timeoutMs
+  });
+
+  if (!response) {
+    throw new Error('Browser fallback returned no response');
+  }
+
+  const statusCode = response.status();
+  if (statusCode < 200 || statusCode >= 300) {
+    throw new Error(`HTTP ${statusCode}`);
+  }
+
+  const headers = response.headers();
+  const contentType = getHeader(headers, 'content-type');
+  ensureImageContentType(contentType);
+
+  const contentLength = getHeader(headers, 'content-length');
+  if (contentLength && parseInt(contentLength, 10) > MAX_IMAGE_SIZE) {
+    throw new Error('Image too large (>10MB)');
+  }
+
+  const buffer = await response.buffer();
+  if (!buffer.length) {
+    throw new Error('Browser fallback image body was empty');
+  }
+
+  ensureImageBufferSize(buffer);
+  await fs.writeFile(outputPath, buffer);
+}
+
 /**
  * Download a single image and return the local filename
  * @param {string} imageUrl - URL of the image to download
@@ -105,7 +361,6 @@ function resolveConcurrencyLimit(value) {
  * @returns {Promise<{success: boolean, url: string, filename: string|null, error: string|null}>}
  */
 async function downloadImage(imageUrl, outputDir, options = {}) {
-  const timeoutMs = options.timeoutMs || DEFAULT_TIMEOUT_MS;
   const filename = generateFilename(imageUrl);
   const outputPath = path.join(outputDir, filename);
 
@@ -117,53 +372,14 @@ async function downloadImage(imageUrl, outputDir, options = {}) {
     // File doesn't exist, proceed with download
   }
 
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-
   try {
-    const response = await fetch(imageUrl, {
-      method: 'GET',
-      headers: {
-        'user-agent': DEFAULT_USER_AGENT,
-        'accept': 'image/*,*/*;q=0.1',
-        'referer': `${new URL(imageUrl).origin}/`
-      },
-      signal: controller.signal
-    });
-
-    if (!response.ok) {
-      return { success: false, url: imageUrl, filename, error: `HTTP ${response.status}` };
-    }
-
-    const contentType = response.headers.get('content-type') || '';
-    if (!contentType.startsWith('image/')) {
-      return { success: false, url: imageUrl, filename, error: `Not an image: ${contentType}` };
-    }
-
-    const contentLength = response.headers.get('content-length');
-    if (contentLength && parseInt(contentLength, 10) > MAX_IMAGE_SIZE) {
-      return { success: false, url: imageUrl, filename, error: 'Image too large (>10MB)' };
-    }
-
-    // Ensure output directory exists
     await fs.mkdir(outputDir, { recursive: true });
 
-    // Download with size check
-    const buffer = await response.arrayBuffer();
-    if (buffer.byteLength > MAX_IMAGE_SIZE) {
-      return { success: false, url: imageUrl, filename, error: 'Downloaded image too large (>10MB)' };
-    }
-
-    await fs.writeFile(outputPath, Buffer.from(buffer));
+    await downloadImageWithCuimp(imageUrl, outputPath, options);
 
     return { success: true, url: imageUrl, filename, error: null };
   } catch (error) {
-    if (error instanceof Error && error.name === 'AbortError') {
-      return { success: false, url: imageUrl, filename, error: `Timeout after ${timeoutMs}ms` };
-    }
     return { success: false, url: imageUrl, filename, error: error.message };
-  } finally {
-    clearTimeout(timer);
   }
 }
 
@@ -230,6 +446,7 @@ function replaceImageUrls(markdown, urlToFilename) {
 export async function downloadImagesAndReplace(markdown, outputDir, options = {}) {
   const imageUrls = extractImageUrls(markdown);
   const concurrencyLimit = resolveConcurrencyLimit(options.concurrency ?? 5);
+  const timeoutMs = options.timeoutMs || DEFAULT_TIMEOUT_MS;
 
   if (imageUrls.length === 0) {
     return { markdown, downloadedImages: [], failedImages: [], localPath: outputDir };
@@ -238,24 +455,67 @@ export async function downloadImagesAndReplace(markdown, outputDir, options = {}
   // Ensure output directory exists
   await fs.mkdir(outputDir, { recursive: true });
 
+  try {
+    await primeCuimpSession(options.pageUrl, timeoutMs);
+  } catch {
+    // Session priming is best-effort. Individual image downloads still attempt cuimp first,
+    // then browser fallback if needed.
+  }
+
   const urlToFilename = new Map();
   const downloadedImages = [];
   const failedImages = [];
+  let browserSession = null;
 
-  for (let i = 0; i < imageUrls.length; i += concurrencyLimit) {
-    const batch = imageUrls.slice(i, i + concurrencyLimit);
-    const results = await Promise.allSettled(
-      batch.map(url => downloadImage(url, outputDir, options))
-    );
+  try {
+    for (let i = 0; i < imageUrls.length; i += concurrencyLimit) {
+      const batch = imageUrls.slice(i, i + concurrencyLimit);
+      const results = await Promise.allSettled(
+        batch.map((url) => downloadImage(url, outputDir, options))
+      );
 
-    for (const result of results) {
-      if (result.status === 'fulfilled' && result.value.success) {
-        urlToFilename.set(result.value.url, result.value.filename);
-        downloadedImages.push({ url: result.value.url, filename: result.value.filename });
-      } else {
-        const err = result.status === 'rejected' ? result.reason : result.value;
-        failedImages.push({ url: err.url || err.message, error: err.error || String(err) });
+      for (const [index, result] of results.entries()) {
+        const imageUrl = batch[index];
+
+        if (result.status === 'fulfilled' && result.value.success) {
+          urlToFilename.set(result.value.url, result.value.filename);
+          downloadedImages.push({ url: result.value.url, filename: result.value.filename });
+          continue;
+        }
+
+        const cuimpError =
+          result.status === 'rejected'
+            ? result.reason instanceof Error
+              ? result.reason.message
+              : String(result.reason)
+            : result.value.error || 'Unknown cuimp download failure';
+
+        const filename = generateFilename(imageUrl);
+        const outputPath = path.join(outputDir, filename);
+
+        try {
+          if (!browserSession) {
+            browserSession = await createBrowserFallbackSession(
+              options.pageUrl,
+              timeoutMs
+            );
+          }
+
+          await downloadImageWithBrowser(imageUrl, outputPath, options, browserSession);
+          urlToFilename.set(imageUrl, filename);
+          downloadedImages.push({ url: imageUrl, filename });
+        } catch (browserError) {
+          const browserMessage = browserError instanceof Error ? browserError.message : String(browserError);
+          failedImages.push({
+            url: imageUrl,
+            error: `cuimp failed: ${cuimpError}; browser fallback failed: ${browserMessage}`
+          });
+        }
       }
+    }
+  } finally {
+    if (browserSession) {
+      await browserSession.browser.close();
     }
   }
 
@@ -276,6 +536,7 @@ function parseArgs(argv) {
   const args = {
     markdown: '',
     outputDir: '',
+    pageUrl: '',
     timeoutMs: DEFAULT_TIMEOUT_MS,
     concurrency: 5,
     json: false
@@ -292,6 +553,12 @@ function parseArgs(argv) {
     
     if (token === '--output' || token === '-o') {
       args.outputDir = argv[i + 1] || '';
+      i += 1;
+      continue;
+    }
+
+    if (token === '--page-url') {
+      args.pageUrl = argv[i + 1] || '';
       i += 1;
       continue;
     }
@@ -322,7 +589,7 @@ function parseArgs(argv) {
   }
   
   if (!args.markdown) {
-    throw new Error('Usage: node scripts/download_images.mjs <markdown_or_file> [output_dir] [--output <dir>] [--timeout-ms 15000] [--concurrency 5] [--json]');
+    throw new Error('Usage: node scripts/download_images.mjs <markdown_or_file> [output_dir] [--output <dir>] [--page-url <url>] [--timeout-ms 15000] [--concurrency 5] [--json]');
   }
   
   if (!args.outputDir) {
@@ -350,6 +617,7 @@ async function main() {
     }
 
     const result = await downloadImagesAndReplace(markdown, args.outputDir, {
+      pageUrl: args.pageUrl,
       timeoutMs: args.timeoutMs,
       concurrency: args.concurrency
     });

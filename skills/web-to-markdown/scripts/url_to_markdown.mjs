@@ -286,6 +286,7 @@ async function main() {
       }
 
       const imageResult = await downloadImagesAndReplace(result.markdown, imagesDir, {
+        pageUrl: result.resolvedUrl || normalizeUrl(args.url).toString(),
         timeoutMs: args.timeoutMs
       });
 
