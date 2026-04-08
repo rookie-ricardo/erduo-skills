@@ -88,6 +88,15 @@ function isValidImageUrl(url) {
   }
 }
 
+function resolveConcurrencyLimit(value) {
+  const concurrency = Number(value);
+  if (!Number.isFinite(concurrency) || concurrency <= 0) {
+    throw new Error('--concurrency must be a positive number');
+  }
+
+  return Math.floor(concurrency);
+}
+
 /**
  * Download a single image and return the local filename
  * @param {string} imageUrl - URL of the image to download
@@ -192,31 +201,22 @@ function extractImageUrls(markdown) {
  * @returns {string} Modified markdown with local paths
  */
 function replaceImageUrls(markdown, urlToFilename) {
-  // Pre-compile regex patterns for all URLs at once using alternation
   if (urlToFilename.size === 0) return markdown;
 
-  // Build a single regex with all URLs as alternatives
-  const escapedUrls = [...urlToFilename.keys()].map(u => u.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
-  const combinedRegex = new RegExp(
-    `${MD_IMG_REGEX.source}|${HTML_IMG_REGEX.source.replace('["\']', '["\']')}`,
-    'g'
-  );
-
-  return markdown.replace(combinedRegex, (match, ...groups) => {
-    // Group indices: MD_IMG: 1=alt, 2=url; HTML_IMG: 3=before src, 4=url, 5=after src
-    const mdAlt = groups[0];
-    const mdUrl = groups[1];
-    const htmlBefore = groups[3];
-    const htmlUrl = groups[4];
-    const htmlAfter = groups[5];
-
-    if (mdUrl !== undefined && urlToFilename.has(mdUrl)) {
-      return `![${mdAlt || ''}](${urlToFilename.get(mdUrl)})`;
+  const markdownReplaced = markdown.replace(MD_IMG_REGEX, (match, alt, url) => {
+    if (!urlToFilename.has(url)) {
+      return match;
     }
-    if (htmlUrl !== undefined && urlToFilename.has(htmlUrl)) {
-      return `${htmlBefore}${urlToFilename.get(htmlUrl)}${htmlAfter}`;
+
+    return `![${alt || ''}](${urlToFilename.get(url)})`;
+  });
+
+  return markdownReplaced.replace(HTML_IMG_REGEX, (match, url) => {
+    if (!urlToFilename.has(url)) {
+      return match;
     }
-    return match; // No replacement found
+
+    return match.replace(url, urlToFilename.get(url));
   });
 }
 
@@ -229,6 +229,7 @@ function replaceImageUrls(markdown, urlToFilename) {
  */
 export async function downloadImagesAndReplace(markdown, outputDir, options = {}) {
   const imageUrls = extractImageUrls(markdown);
+  const concurrencyLimit = resolveConcurrencyLimit(options.concurrency ?? 5);
 
   if (imageUrls.length === 0) {
     return { markdown, downloadedImages: [], failedImages: [], localPath: outputDir };
@@ -240,9 +241,6 @@ export async function downloadImagesAndReplace(markdown, outputDir, options = {}
   const urlToFilename = new Map();
   const downloadedImages = [];
   const failedImages = [];
-
-  // Download images in parallel with concurrency limit using Promise.allSettled
-  const concurrencyLimit = options.concurrency || 5;
 
   for (let i = 0; i < imageUrls.length; i += concurrencyLimit) {
     const batch = imageUrls.slice(i, i + concurrencyLimit);
@@ -305,7 +303,7 @@ function parseArgs(argv) {
     }
     
     if (token === '--concurrency') {
-      args.concurrency = Number(argv[i + 1]) || 5;
+      args.concurrency = resolveConcurrencyLimit(argv[i + 1]);
       i += 1;
       continue;
     }

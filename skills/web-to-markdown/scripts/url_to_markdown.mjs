@@ -1,8 +1,6 @@
 #!/usr/bin/env node
 
 import process from 'node:process';
-import path from 'node:path';
-import fs from 'node:fs';
 
 const R_JINA_BASE = 'https://r.jina.ai/';
 const DEFUDDLE_BASE = 'https://defuddle.md/';
@@ -280,8 +278,8 @@ async function main() {
       // Determine output directory for images
       let imagesDir = args.imagesOutputDir;
       if (!imagesDir) {
-        // Create a directory based on the URL hostname
-        const urlObj = new URL(args.url);
+        // Create a directory based on the normalized/resolved URL hostname
+        const urlObj = new URL(result.resolvedUrl || normalizeUrl(args.url).toString());
         const sanitizedHost = urlObj.hostname.replace(/[^a-zA-Z0-9]/g, '_');
         const timestamp = Date.now();
         imagesDir = `./images_${sanitizedHost}_${timestamp}`;
