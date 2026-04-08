@@ -5,17 +5,15 @@
  * Downloads images from markdown content and replaces URLs with local paths
  */
 
-import fs from 'node:fs';
+import fs from 'node:fs/promises';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
-import { pipeline } from 'node:stream/promises';
-import { Readable } from 'node:stream';
 
 /**
  * Regular expression to match markdown image syntax: ![alt](url)
  * Captures: alt text (group 1), URL (group 2)
  */
-const IMAGE_REGEX = /!\[([^\]]*)\]\(([^)\s]+)\)/g;
+const MD_IMG_REGEX = /!\[([^\]]*)\]\(([^)\s]+)\)/g;
 
 /**
  * Regular expression to match HTML img tags: <img src="url" ...>
@@ -101,15 +99,18 @@ async function downloadImage(imageUrl, outputDir, options = {}) {
   const timeoutMs = options.timeoutMs || DEFAULT_TIMEOUT_MS;
   const filename = generateFilename(imageUrl);
   const outputPath = path.join(outputDir, filename);
-  
+
   // Skip if already exists
-  if (fs.existsSync(outputPath)) {
+  try {
+    await fs.access(outputPath);
     return { success: true, url: imageUrl, filename, error: null };
+  } catch {
+    // File doesn't exist, proceed with download
   }
-  
+
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
-  
+
   try {
     const response = await fetch(imageUrl, {
       method: 'GET',
@@ -120,34 +121,32 @@ async function downloadImage(imageUrl, outputDir, options = {}) {
       },
       signal: controller.signal
     });
-    
+
     if (!response.ok) {
       return { success: false, url: imageUrl, filename, error: `HTTP ${response.status}` };
     }
-    
+
     const contentType = response.headers.get('content-type') || '';
     if (!contentType.startsWith('image/')) {
       return { success: false, url: imageUrl, filename, error: `Not an image: ${contentType}` };
     }
-    
+
     const contentLength = response.headers.get('content-length');
     if (contentLength && parseInt(contentLength, 10) > MAX_IMAGE_SIZE) {
       return { success: false, url: imageUrl, filename, error: 'Image too large (>10MB)' };
     }
-    
+
     // Ensure output directory exists
-    if (!fs.existsSync(outputDir)) {
-      fs.mkdirSync(outputDir, { recursive: true });
-    }
-    
+    await fs.mkdir(outputDir, { recursive: true });
+
     // Download with size check
     const buffer = await response.arrayBuffer();
     if (buffer.byteLength > MAX_IMAGE_SIZE) {
       return { success: false, url: imageUrl, filename, error: 'Downloaded image too large (>10MB)' };
     }
-    
-    fs.writeFileSync(outputPath, Buffer.from(buffer));
-    
+
+    await fs.writeFile(outputPath, Buffer.from(buffer));
+
     return { success: true, url: imageUrl, filename, error: null };
   } catch (error) {
     if (error instanceof Error && error.name === 'AbortError') {
@@ -166,25 +165,23 @@ async function downloadImage(imageUrl, outputDir, options = {}) {
  */
 function extractImageUrls(markdown) {
   const urls = new Set();
-  
+
   // Match markdown images: ![alt](url)
-  let match;
-  while ((match = IMAGE_REGEX.exec(markdown)) !== null) {
+  for (const match of markdown.matchAll(MD_IMG_REGEX)) {
     const url = match[2].trim();
     if (isValidImageUrl(url)) {
       urls.add(url);
     }
   }
-  
+
   // Match HTML img tags: <img src="url" ...>
-  IMAGE_REGEX.lastIndex = 0; // Reset regex
-  while ((match = HTML_IMG_REGEX.exec(markdown)) !== null) {
+  for (const match of markdown.matchAll(HTML_IMG_REGEX)) {
     const url = match[1].trim();
     if (isValidImageUrl(url)) {
       urls.add(url);
     }
   }
-  
+
   return Array.from(urls);
 }
 
@@ -195,23 +192,32 @@ function extractImageUrls(markdown) {
  * @returns {string} Modified markdown with local paths
  */
 function replaceImageUrls(markdown, urlToFilename) {
-  let result = markdown;
-  
-  // Replace markdown images: ![alt](url) -> ![alt](local/path)
-  for (const [url, filename] of urlToFilename) {
-    // Escape special regex characters in URL for safe replacement
-    const escapedUrl = url.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    
-    // Replace in markdown image syntax
-    const markdownRegex = new RegExp(`!\\[([^\\]]*)\\]\\(${escapedUrl}\\)`, 'g');
-    result = result.replace(markdownRegex, `![$1](${filename})`);
-    
-    // Replace in HTML img tags
-    const htmlRegex = new RegExp(`(<img[^>]+src=["'])${escapedUrl}(["'][^>]*>)`, 'g');
-    result = result.replace(htmlRegex, `$1${filename}$2`);
-  }
-  
-  return result;
+  // Pre-compile regex patterns for all URLs at once using alternation
+  if (urlToFilename.size === 0) return markdown;
+
+  // Build a single regex with all URLs as alternatives
+  const escapedUrls = [...urlToFilename.keys()].map(u => u.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+  const combinedRegex = new RegExp(
+    `${MD_IMG_REGEX.source}|${HTML_IMG_REGEX.source.replace('["\']', '["\']')}`,
+    'g'
+  );
+
+  return markdown.replace(combinedRegex, (match, ...groups) => {
+    // Group indices: MD_IMG: 1=alt, 2=url; HTML_IMG: 3=before src, 4=url, 5=after src
+    const mdAlt = groups[0];
+    const mdUrl = groups[1];
+    const htmlBefore = groups[3];
+    const htmlUrl = groups[4];
+    const htmlAfter = groups[5];
+
+    if (mdUrl !== undefined && urlToFilename.has(mdUrl)) {
+      return `![${mdAlt || ''}](${urlToFilename.get(mdUrl)})`;
+    }
+    if (htmlUrl !== undefined && urlToFilename.has(htmlUrl)) {
+      return `${htmlBefore}${urlToFilename.get(htmlUrl)}${htmlAfter}`;
+    }
+    return match; // No replacement found
+  });
 }
 
 /**
@@ -223,46 +229,40 @@ function replaceImageUrls(markdown, urlToFilename) {
  */
 export async function downloadImagesAndReplace(markdown, outputDir, options = {}) {
   const imageUrls = extractImageUrls(markdown);
-  
+
   if (imageUrls.length === 0) {
-    return {
-      markdown,
-      downloadedImages: [],
-      failedImages: [],
-      localPath: outputDir
-    };
+    return { markdown, downloadedImages: [], failedImages: [], localPath: outputDir };
   }
-  
+
   // Ensure output directory exists
-  if (!fs.existsSync(outputDir)) {
-    fs.mkdirSync(outputDir, { recursive: true });
-  }
-  
+  await fs.mkdir(outputDir, { recursive: true });
+
   const urlToFilename = new Map();
   const downloadedImages = [];
   const failedImages = [];
-  
-  // Download images in parallel (limited concurrency)
+
+  // Download images in parallel with concurrency limit using Promise.allSettled
   const concurrencyLimit = options.concurrency || 5;
-  
+
   for (let i = 0; i < imageUrls.length; i += concurrencyLimit) {
     const batch = imageUrls.slice(i, i + concurrencyLimit);
-    const results = await Promise.all(
+    const results = await Promise.allSettled(
       batch.map(url => downloadImage(url, outputDir, options))
     );
-    
+
     for (const result of results) {
-      if (result.success) {
-        urlToFilename.set(result.url, result.filename);
-        downloadedImages.push({ url: result.url, filename: result.filename });
+      if (result.status === 'fulfilled' && result.value.success) {
+        urlToFilename.set(result.value.url, result.value.filename);
+        downloadedImages.push({ url: result.value.url, filename: result.value.filename });
       } else {
-        failedImages.push({ url: result.url, error: result.error });
+        const err = result.status === 'rejected' ? result.reason : result.value;
+        failedImages.push({ url: err.url || err.message, error: err.error || String(err) });
       }
     }
   }
-  
+
   const modifiedMarkdown = replaceImageUrls(markdown, urlToFilename);
-  
+
   return {
     markdown: modifiedMarkdown,
     downloadedImages,
@@ -340,24 +340,27 @@ function parseArgs(argv) {
 async function main() {
   try {
     const args = parseArgs(process.argv);
-    
+
     let markdown = args.markdown;
-    
+
     // Check if input is a file path
-    if (fs.existsSync(args.markdown)) {
-      markdown = fs.readFileSync(args.markdown, 'utf-8');
+    try {
+      await fs.access(args.markdown);
+      markdown = await fs.readFile(args.markdown, 'utf-8');
+    } catch {
+      // Not a file, use as raw markdown content
     }
-    
+
     const result = await downloadImagesAndReplace(markdown, args.outputDir, {
       timeoutMs: args.timeoutMs,
       concurrency: args.concurrency
     });
-    
+
     if (args.json) {
       process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
       return;
     }
-    
+
     // Print summary
     if (result.downloadedImages.length > 0) {
       process.stdout.write(`Downloaded ${result.downloadedImages.length} image(s) to ${result.localPath}\n`);
@@ -368,11 +371,11 @@ async function main() {
         process.stderr.write(`  - ${img.url}: ${img.error}\n`);
       }
     }
-    
+
     // Output modified markdown
     process.stdout.write('\n--- Modified Markdown ---\n');
     process.stdout.write(result.markdown);
-    
+
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     process.stderr.write(`download_images failed: ${message}\n`);
