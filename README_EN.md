@@ -314,7 +314,7 @@ Contributions welcome! Each skill is a self-contained directory under `skills/`,
 
 ## 📄 License
 
-[MIT](LICENSE) © Rookie Ricardo
+[MIT](LICENSE) © Erduo
 
 [![Star History Chart](https://api.star-history.com/svg?repos=rookie-ricardo/erduo-skills&type=Date)](https://www.star-history.com/#rookie-ricardo/erduo-skills&Date)
 

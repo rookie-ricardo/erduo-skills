@@ -315,7 +315,7 @@ npx skills add rookie-ricardo/erduo-skills
 
 ## 📄 许可协议
 
-[MIT](LICENSE) © Rookie Ricardo
+[MIT](LICENSE) © Erduo
 
 [![Star History Chart](https://api.star-history.com/svg?repos=rookie-ricardo/erduo-skills&type=Date)](https://www.star-history.com/#rookie-ricardo/erduo-skills&Date)
 
