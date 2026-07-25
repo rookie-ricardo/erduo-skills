@@ -1,0 +1,14 @@
+{
+  "name": "anthropic-style-diagram-skill",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Render semantic Anthropic-style SVG diagrams to PNG with layout auditing.",
+  "scripts": {
+    "render": "node scripts/render.mjs",
+    "check": "node scripts/render.mjs references/example-structural.svg --check"
+  },
+  "dependencies": {
+    "playwright": "^1.58.2"
+  }
+}

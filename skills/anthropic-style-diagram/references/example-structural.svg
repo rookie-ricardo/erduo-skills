@@ -1,0 +1,106 @@
+<svg viewBox="0 0 680 742" role="img">
+  <title>Hermes agent architecture</title>
+  <desc>User interfaces feed a core agent loop holding state, trajectory compression and parallel subagents; memory and skills form a learning loop; tools and execution backends sit below; LLM providers underpin both; research infrastructure consumes the output.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+  </defs>
+
+  <g class="node c-purple">
+    <rect x="40" y="30" width="155" height="68" rx="8"/>
+    <text class="th" x="117" y="52" text-anchor="middle" dominant-baseline="central">CLI / TUI</text>
+    <text class="ts" x="117" y="73" text-anchor="middle" dominant-baseline="central">Rich terminal interface</text>
+  </g>
+  <g class="node c-purple">
+    <rect x="210" y="30" width="280" height="68" rx="8"/>
+    <text class="th" x="350" y="48" text-anchor="middle" dominant-baseline="central">Messaging gateway</text>
+    <text class="ts" x="350" y="64" text-anchor="middle" dominant-baseline="central">Telegram · Discord · Slack</text>
+    <text class="ts" x="350" y="80" text-anchor="middle" dominant-baseline="central">WhatsApp · Signal · Email</text>
+  </g>
+  <g class="node c-amber">
+    <rect x="510" y="30" width="130" height="68" rx="8"/>
+    <text class="th" x="575" y="52" text-anchor="middle" dominant-baseline="central">Cron scheduler</text>
+    <text class="ts" x="575" y="73" text-anchor="middle" dominant-baseline="central">Scheduled tasks</text>
+  </g>
+  <line x1="117" y1="98" x2="117" y2="118" class="arr" marker-end="url(#arrow)"/>
+  <line x1="350" y1="98" x2="350" y2="118" class="arr" marker-end="url(#arrow)"/>
+  <line x1="575" y1="98" x2="575" y2="118" class="arr" marker-end="url(#arrow)"/>
+
+  <g class="c-teal">
+    <rect x="40" y="118" width="600" height="140" rx="12"/>
+    <text class="th" x="340" y="136" text-anchor="middle" dominant-baseline="central">Core agent loop</text>
+  </g>
+  <g class="node box">
+    <rect x="60" y="152" width="155" height="72" rx="8"/>
+    <text class="th" x="137" y="174" text-anchor="middle" dominant-baseline="central">State &amp; context</text>
+    <text class="ts" x="137" y="198" text-anchor="middle" dominant-baseline="central">Conversation history</text>
+  </g>
+  <g class="node box">
+    <rect x="232" y="152" width="180" height="72" rx="8"/>
+    <text class="th" x="322" y="174" text-anchor="middle" dominant-baseline="central">Trajectory</text>
+    <text class="ts" x="322" y="198" text-anchor="middle" dominant-baseline="central">Context compression</text>
+  </g>
+  <g class="node box">
+    <rect x="430" y="152" width="190" height="72" rx="8"/>
+    <text class="th" x="525" y="174" text-anchor="middle" dominant-baseline="central">Parallel subagents</text>
+    <text class="ts" x="525" y="198" text-anchor="middle" dominant-baseline="central">Delegate &amp; parallelize</text>
+  </g>
+  <line x1="180" y1="258" x2="180" y2="282" class="arr" marker-end="url(#arrow)"/>
+  <line x1="500" y1="258" x2="500" y2="282" class="arr" marker-end="url(#arrow)"/>
+
+  <g class="node c-blue">
+    <rect x="40" y="282" width="280" height="110" rx="8"/>
+    <text class="th" x="180" y="304" text-anchor="middle" dominant-baseline="central">Memory system</text>
+    <text class="ts" x="180" y="324" text-anchor="middle" dominant-baseline="central">MEMORY.md · USER.md</text>
+    <text class="ts" x="180" y="344" text-anchor="middle" dominant-baseline="central">Honcho user modeling</text>
+    <text class="ts" x="180" y="364" text-anchor="middle" dominant-baseline="central">FTS5 session search</text>
+  </g>
+  <g class="node c-coral">
+    <rect x="360" y="282" width="280" height="110" rx="8"/>
+    <text class="th" x="500" y="304" text-anchor="middle" dominant-baseline="central">Skills system</text>
+    <text class="ts" x="500" y="324" text-anchor="middle" dominant-baseline="central">Auto-creation after tasks</text>
+    <text class="ts" x="500" y="344" text-anchor="middle" dominant-baseline="central">Self-improving during use</text>
+    <text class="ts" x="500" y="364" text-anchor="middle" dominant-baseline="central">agentskills.io standard</text>
+  </g>
+  <line x1="180" y1="392" x2="180" y2="416" class="arr" marker-end="url(#arrow)"/>
+  <line x1="500" y1="392" x2="500" y2="416" class="arr" marker-end="url(#arrow)"/>
+
+  <g class="node c-green">
+    <rect x="40" y="416" width="280" height="100" rx="8"/>
+    <text class="th" x="180" y="438" text-anchor="middle" dominant-baseline="central">Tools &amp; MCP</text>
+    <text class="ts" x="180" y="458" text-anchor="middle" dominant-baseline="central">40+ built-in tools</text>
+    <text class="ts" x="180" y="478" text-anchor="middle" dominant-baseline="central">MCP server integration</text>
+  </g>
+  <g class="node c-gray">
+    <rect x="360" y="416" width="280" height="100" rx="8"/>
+    <text class="th" x="500" y="438" text-anchor="middle" dominant-baseline="central">Execution backends</text>
+    <text class="ts" x="500" y="458" text-anchor="middle" dominant-baseline="central">Local · Docker · SSH</text>
+    <text class="ts" x="500" y="478" text-anchor="middle" dominant-baseline="central">Daytona · Modal · Singularity</text>
+  </g>
+  <line x1="180" y1="516" x2="180" y2="540" class="arr" marker-end="url(#arrow)"/>
+  <line x1="500" y1="516" x2="500" y2="540" class="arr" marker-end="url(#arrow)"/>
+
+  <g class="node c-purple">
+    <rect x="40" y="540" width="600" height="60" rx="8"/>
+    <text class="th" x="340" y="558" text-anchor="middle" dominant-baseline="central">LLM providers</text>
+    <text class="ts" x="340" y="577" text-anchor="middle" dominant-baseline="central">Nous Portal · OpenRouter · OpenAI · z.ai/GLM · Kimi · MiniMax</text>
+  </g>
+  <line x1="180" y1="600" x2="180" y2="624" class="arr" marker-end="url(#arrow)"/>
+  <line x1="500" y1="600" x2="500" y2="624" class="arr" marker-end="url(#arrow)"/>
+
+  <g class="node c-amber">
+    <rect x="40" y="624" width="280" height="80" rx="8"/>
+    <text class="th" x="180" y="648" text-anchor="middle" dominant-baseline="central">RL / research</text>
+    <text class="ts" x="180" y="668" text-anchor="middle" dominant-baseline="central">Atropos RL environments</text>
+    <text class="ts" x="180" y="688" text-anchor="middle" dominant-baseline="central">Trajectory generation</text>
+  </g>
+  <g class="node c-gray">
+    <rect x="360" y="624" width="280" height="80" rx="8"/>
+    <text class="th" x="500" y="648" text-anchor="middle" dominant-baseline="central">Training data</text>
+    <text class="ts" x="500" y="668" text-anchor="middle" dominant-baseline="central">Batch runner</text>
+    <text class="ts" x="500" y="688" text-anchor="middle" dominant-baseline="central">Trajectory compression</text>
+  </g>
+
+  <path class="leader" d="M 640 337 L 657 337 L 657 188 L 640 188" marker-end="url(#arrow)"/>
+</svg>

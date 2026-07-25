@@ -1,0 +1,142 @@
+/* Anthropic diagram design system.
+   Injected by scripts/render.mjs at render time; the exported SVG is flattened
+   to literal values, so authored SVGs carry semantic classes only.
+   Theme is driven by data-theme on the root element, never by the OS. */
+
+:root {
+  --font-sans: "Anthropic Sans", "Inter", -apple-system, BlinkMacSystemFont,
+    "Segoe UI", "Helvetica Neue", "PingFang SC", "Hiragino Sans GB",
+    "Microsoft YaHei", Arial, sans-serif;
+
+  --paper: #faf9f5;
+  --text-primary: #141413;
+  --text-secondary: #3d3d3a;
+  --text-tertiary: #73726c;
+  --surface: #f5f4ed;
+  --border: #1f1e1d66;
+
+  --purple-50: #eeedfe; --purple-100: #cecbf6; --purple-200: #afa9ec;
+  --purple-400: #7f77dd; --purple-600: #534ab7; --purple-800: #3c3489; --purple-900: #26215c;
+
+  --teal-50: #e1f5ee; --teal-100: #9fe1cb; --teal-200: #5dcaa5;
+  --teal-400: #1d9e75; --teal-600: #0f6e56; --teal-800: #085041; --teal-900: #04342c;
+
+  --coral-50: #faece7; --coral-100: #f5c4b3; --coral-200: #f0997b;
+  --coral-400: #d85a30; --coral-600: #993c1d; --coral-800: #712b13; --coral-900: #4a1b0c;
+
+  --pink-50: #fbeaf0; --pink-100: #f4c0d1; --pink-200: #ed93b1;
+  --pink-400: #d4537e; --pink-600: #993556; --pink-800: #72243e; --pink-900: #4b1528;
+
+  --gray-50: #f1efe8; --gray-100: #d3d1c7; --gray-200: #b4b2a9;
+  --gray-400: #888780; --gray-600: #5f5e5a; --gray-800: #444441; --gray-900: #2c2c2a;
+
+  --blue-50: #e6f1fb; --blue-100: #b5d4f4; --blue-200: #85b7eb;
+  --blue-400: #378add; --blue-600: #185fa5; --blue-800: #0c447c; --blue-900: #042c53;
+
+  --green-50: #eaf3de; --green-100: #c0dd97; --green-200: #97c459;
+  --green-400: #639922; --green-600: #3b6d11; --green-800: #27500a; --green-900: #173404;
+
+  --amber-50: #faeeda; --amber-100: #fac775; --amber-200: #ef9f27;
+  --amber-400: #ba7517; --amber-600: #854f0b; --amber-800: #633806; --amber-900: #412402;
+
+  --red-50: #fcebeb; --red-100: #f7c1c1; --red-200: #f09595;
+  --red-400: #e24b4a; --red-600: #a32d2d; --red-800: #791f1f; --red-900: #501313;
+}
+
+:root[data-theme="dark"] {
+  --paper: #141413;
+  --text-primary: #faf9f5;
+  --text-secondary: #c2c0b6;
+  --text-tertiary: #9c9a92;
+  --surface: #262624;
+  --border: #dedcd166;
+}
+
+svg {
+  font-family: var(--font-sans);
+  font-kerning: normal;
+  text-rendering: geometricPrecision;
+}
+
+svg text {
+  stroke: none;
+}
+
+svg .t {
+  font-size: 14px;
+  font-weight: 400;
+  fill: var(--text-primary);
+}
+
+svg .ts {
+  font-size: 12px;
+  font-weight: 400;
+  fill: var(--text-secondary);
+}
+
+svg .th {
+  font-size: 14px;
+  font-weight: 500;
+  fill: var(--text-primary);
+}
+
+svg .box > :is(rect, circle, ellipse, polygon),
+svg :is(rect, circle, ellipse, polygon).box {
+  fill: var(--surface);
+  stroke: var(--border);
+  stroke-width: 0.5;
+}
+
+svg .arr {
+  fill: none;
+  stroke: var(--text-secondary);
+  stroke-width: 1.5;
+}
+
+svg .leader {
+  fill: none;
+  stroke: var(--border);
+  stroke-width: 0.5;
+  stroke-dasharray: 4 3;
+}
+
+svg .c-purple { --_50: var(--purple-50); --_100: var(--purple-100); --_200: var(--purple-200); --_600: var(--purple-600); --_800: var(--purple-800); }
+svg .c-teal   { --_50: var(--teal-50);   --_100: var(--teal-100);   --_200: var(--teal-200);   --_600: var(--teal-600);   --_800: var(--teal-800); }
+svg .c-coral  { --_50: var(--coral-50);  --_100: var(--coral-100);  --_200: var(--coral-200);  --_600: var(--coral-600);  --_800: var(--coral-800); }
+svg .c-pink   { --_50: var(--pink-50);   --_100: var(--pink-100);   --_200: var(--pink-200);   --_600: var(--pink-600);   --_800: var(--pink-800); }
+svg .c-gray   { --_50: var(--gray-50);   --_100: var(--gray-100);   --_200: var(--gray-200);   --_600: var(--gray-600);   --_800: var(--gray-800); }
+svg .c-blue   { --_50: var(--blue-50);   --_100: var(--blue-100);   --_200: var(--blue-200);   --_600: var(--blue-600);   --_800: var(--blue-800); }
+svg .c-green  { --_50: var(--green-50);  --_100: var(--green-100);  --_200: var(--green-200);  --_600: var(--green-600);  --_800: var(--green-800); }
+svg .c-amber  { --_50: var(--amber-50);  --_100: var(--amber-100);  --_200: var(--amber-200);  --_600: var(--amber-600);  --_800: var(--amber-800); }
+svg .c-red    { --_50: var(--red-50);    --_100: var(--red-100);    --_200: var(--red-200);    --_600: var(--red-600);    --_800: var(--red-800); }
+
+/* Light mode maps the ramp onto four semantic slots; dark mode remaps the same
+   four slots once, so every paint rule below stays theme-agnostic. */
+svg :is(.c-purple, .c-teal, .c-coral, .c-pink, .c-gray, .c-blue, .c-green, .c-amber, .c-red) {
+  --_fill: var(--_50);
+  --_stroke: var(--_600);
+  --_title: var(--_800);
+  --_subtitle: var(--_600);
+}
+
+:root[data-theme="dark"] svg :is(.c-purple, .c-teal, .c-coral, .c-pink, .c-gray, .c-blue, .c-green, .c-amber, .c-red) {
+  --_fill: var(--_800);
+  --_stroke: var(--_200);
+  --_title: var(--_100);
+  --_subtitle: var(--_200);
+}
+
+svg :is(.c-purple, .c-teal, .c-coral, .c-pink, .c-gray, .c-blue, .c-green, .c-amber, .c-red) > :is(rect, circle, ellipse, polygon),
+svg :is(rect, circle, ellipse, polygon):is(.c-purple, .c-teal, .c-coral, .c-pink, .c-gray, .c-blue, .c-green, .c-amber, .c-red) {
+  fill: var(--_fill);
+  stroke: var(--_stroke);
+  stroke-width: 0.5;
+}
+
+svg :is(.c-purple, .c-teal, .c-coral, .c-pink, .c-gray, .c-blue, .c-green, .c-amber, .c-red) :is(.t, .th) {
+  fill: var(--_title);
+}
+
+svg :is(.c-purple, .c-teal, .c-coral, .c-pink, .c-gray, .c-blue, .c-green, .c-amber, .c-red) .ts {
+  fill: var(--_subtitle);
+}

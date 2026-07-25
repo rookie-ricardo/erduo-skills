@@ -23,6 +23,7 @@ npx skills add rookie-ricardo/erduo-skills
 | [Transcript Polisher](#-transcript-polisher) | Speech transcript → readable article, preserving original voice | Agent |
 | [Translate Polisher](#-translate-polisher) | 4-step publication-quality translation for ZH↔EN and ZH↔JA | Agent |
 | [Web To Markdown](#-web-to-markdown) | URL routing + Readability cleanup for clean markdown extraction | Agent / CLI |
+| [Anthropic Style Diagram](#-anthropic-style-diagram) | Draw architecture and flow diagrams in SVG, audit the layout, export PNG | Agent / CLI |
 | [Gemini Watermark Remover](#-gemini-watermark-remover) | Reverse alpha blending to remove Gemini image watermarks | CLI |
 
 ---
@@ -180,6 +181,34 @@ node scripts/url_to_markdown.mjs <url> --json
 
 ---
 
+## 📐 Anthropic Style Diagram
+
+```bash
+npx skills add rookie-ricardo/erduo-skills --skill anthropic-style-diagram
+```
+
+Draw technical diagrams in the Anthropic / Claude visual language, then render and save
+them as an image automatically. Triggers only when that style is explicitly requested.
+
+- You write geometry and semantic classes (`th` / `ts` / `box` / `arr` / `c-blue` …); the renderer injects colour, theme and typography
+- Audits the three failure modes that ruin diagrams: text spilling out of its box, overlapping boxes, connectors crossing unrelated nodes
+- Crops the viewBox to real ink bounds — no clipped content, no dead whitespace
+- Bakes computed styles into literal attributes, so the exported SVG needs no CSS and opens correctly in Figma or Illustrator
+- `--theme both` produces a light and a dark image from one source
+
+```bash
+cd skills/anthropic-style-diagram
+npm install   # skip if playwright is already installed globally
+node scripts/render.mjs diagram.svg -o ~/Downloads/architecture.png
+node scripts/render.mjs diagram.svg -o out.png --theme both --scale 3 --svg
+node scripts/render.mjs diagram.svg --check   # audit layout only, write nothing
+```
+
+Design tokens live in `references/design-system.md`; diagram-type routing and
+copy-ready snippets in `references/diagram-types.md`.
+
+---
+
 ## 🖼 Gemini Watermark Remover
 
 ```bash
@@ -225,6 +254,11 @@ erduo-skills/
 │   │   ├── SKILL.md
 │   │   ├── scripts/
 │   │   └── references/
+│   ├── anthropic-style-diagram/    # Anthropic Style Diagram
+│   │   ├── SKILL.md
+│   │   ├── scripts/render.mjs
+│   │   ├── assets/diagram.css
+│   │   └── references/
 │   └── gemini-watermark-remover/   # Gemini Watermark Remover
 │       ├── SKILL.md
 │       ├── scripts/
@@ -259,7 +293,7 @@ Bundle contents:
 
 - `research-workflows`: `ak-rss-digest`, `daily-news-report`
 - `writing-workflows`: `transcript-polisher`, `translate-polisher`, `web-to-markdown`
-- `image-tools`: `gemini-watermark-remover`
+- `image-tools`: `anthropic-style-diagram`, `gemini-watermark-remover`
 
 For local testing, use the repository path directly:
 

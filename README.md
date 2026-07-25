@@ -23,6 +23,7 @@ npx skills add rookie-ricardo/erduo-skills
 | [转录精修师](#-转录精修师) | 语音转录文本 → 可读文章，保留原汁原味 | Agent 调用 |
 | [翻译精修师](#-翻译精修师) | 四步精翻工作流，支持中英 / 中日双向精翻 | Agent 调用 |
 | [Web To Markdown](#-web-to-markdown) | URL 路由抓取 + Readability 清洗，输出干净 Markdown | Agent 调用 / CLI |
+| [Anthropic 风格图表](#-anthropic-风格图表) | SVG 画架构图/流程图，自动审计版式并导出 PNG | Agent 调用 / CLI |
 | [Gemini 水印移除](#-gemini-水印移除) | 逆向 Alpha 混合去除 Gemini 图片水印 | CLI |
 
 ---
@@ -183,6 +184,32 @@ node scripts/url_to_markdown.mjs <url> --json
 
 ---
 
+## 📐 Anthropic 风格图表
+
+```bash
+npx skills add rookie-ricardo/erduo-skills --skill anthropic-style-diagram
+```
+
+用 Anthropic / Claude 的视觉语言画技术图，画完自动渲染并保存成图片。
+
+- 只写几何和语义类名（`th` / `ts` / `box` / `arr` / `c-blue` …），配色、明暗、字体全部由渲染脚本注入
+- 渲染前自动审计三类致命版式问题：文字溢出盒子、盒子互相重叠、连线穿过无关节点
+- 自动按真实墨迹边界裁剪 viewBox，不会再出现内容被切掉或大片留白
+- 导出时把计算样式烘焙成字面量，产出的 SVG 不依赖任何 CSS，可直接丢进 Figma / Illustrator
+- `--theme both` 一次产出亮色与暗色两张图
+
+```bash
+cd skills/anthropic-style-diagram
+npm install   # 若全局已装 playwright 可跳过
+node scripts/render.mjs diagram.svg -o ~/Downloads/architecture.png
+node scripts/render.mjs diagram.svg -o out.png --theme both --scale 3 --svg
+node scripts/render.mjs diagram.svg --check   # 只审计版式，不产出文件
+```
+
+设计规范见 `references/design-system.md`，图表类型选择与代码片段见 `references/diagram-types.md`。
+
+---
+
 ## 🖼 Gemini 水印移除
 
 ```bash
@@ -228,6 +255,11 @@ erduo-skills/
 │   │   ├── SKILL.md
 │   │   ├── scripts/
 │   │   └── references/
+│   ├── anthropic-style-diagram/    # Anthropic 风格图表
+│   │   ├── SKILL.md
+│   │   ├── scripts/render.mjs
+│   │   ├── assets/diagram.css
+│   │   └── references/
 │   └── gemini-watermark-remover/   # Gemini 水印移除
 │       ├── SKILL.md
 │       ├── scripts/
@@ -262,7 +294,7 @@ erduo-skills/
 
 - `research-workflows`：`ak-rss-digest`、`daily-news-report`
 - `writing-workflows`：`transcript-polisher`、`translate-polisher`、`web-to-markdown`
-- `image-tools`：`gemini-watermark-remover`
+- `image-tools`：`anthropic-style-diagram`、`gemini-watermark-remover`
 
 本地测试可直接使用仓库路径：
 

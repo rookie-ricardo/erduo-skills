@@ -59,7 +59,7 @@
     },
     {
       "name": "image-tools",
-      "description": "Image utility workflows including Gemini watermark removal",
+      "description": "Image workflows including Anthropic-style SVG diagram rendering and Gemini watermark removal",
       "source": "./",
       "strict": false,
       "version": "0.1.0",
@@ -70,11 +70,16 @@
       "repository": "https://github.com/rookie-ricardo/erduo-skills",
       "keywords": [
         "image",
+        "diagram",
+        "svg",
+        "flowchart",
+        "architecture",
         "watermark",
         "gemini"
       ],
       "category": "productivity",
       "skills": [
+        "./skills/anthropic-style-diagram",
         "./skills/gemini-watermark-remover"
       ]
     }
