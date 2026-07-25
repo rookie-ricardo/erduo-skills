@@ -86,15 +86,18 @@ function toDailySeries(dates) {
   return series;
 }
 
-/** Round tick values (1/2/2.5/5 x 10^k) with a little headroom above the peak. */
-function niceScale(max, targetTicks = 4) {
+/**
+ * Round tick values (1/2/2.5/5 x 10^k) below the current total. The scale tops
+ * out at the total itself rather than the next round number: empty headroom
+ * above the last point reads as a ceiling the repo failed to reach.
+ */
+function axisTicks(max, targetTicks = 4) {
   const magnitude = 10 ** Math.floor(Math.log10(max / targetTicks));
   const normalized = max / targetTicks / magnitude;
   const step = (normalized <= 1 ? 1 : normalized <= 2 ? 2 : normalized <= 2.5 ? 2.5 : normalized <= 5 ? 5 : 10) * magnitude;
-  const top = Math.ceil(max / step) * step;
   const ticks = [];
-  for (let value = 0; value <= top + 1e-9; value += step) ticks.push(Math.round(value));
-  return { top, ticks };
+  for (let value = 0; value < max * 0.94; value += step) ticks.push(Math.round(value));
+  return ticks;
 }
 
 function monthTicks(t0, t1) {
@@ -115,7 +118,8 @@ function render(series, theme, mode) {
   const t0 = series[0].t;
   const t1 = series.at(-1).t;
   const total = series.at(-1).n;
-  const { top: yMax, ticks: yTicks } = niceScale(total);
+  const yMax = total;
+  const yTicks = axisTicks(total);
 
   const x = (t) => PAD.left + ((t - t0) / (t1 - t0)) * PLOT.w;
   const y = (n) => PAD.top + PLOT.h - (n / yMax) * PLOT.h;

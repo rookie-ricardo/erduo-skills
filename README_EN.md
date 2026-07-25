@@ -321,8 +321,6 @@ Contributions welcome! Each skill is a self-contained directory under `skills/`,
   <img alt="Star history" src="assets/star-history.svg" width="840">
 </picture>
 
-<sub>GitHub now restricts the stargazers list to repository admins, so third-party chart services can no longer read it anonymously — this chart is self-generated. Refresh with <code>node scripts/star-history.mjs</code></sub>
-
 ---
 
 *Created with ❤️ by Erduo*

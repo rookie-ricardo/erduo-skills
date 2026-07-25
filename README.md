@@ -322,8 +322,6 @@ npx skills add rookie-ricardo/erduo-skills
   <img alt="Star history" src="assets/star-history.svg" width="840">
 </picture>
 
-<sub>GitHub 已将 stargazers 列表限制为仓库管理员可见，第三方图表服务无法再匿名读取，因此改为自建。更新：<code>node scripts/star-history.mjs</code></sub>
-
 ---
 
 *Created with ❤️ by Erduo*
