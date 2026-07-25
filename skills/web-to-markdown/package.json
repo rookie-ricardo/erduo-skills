@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
+  "license": "MIT",
   "description": "Routing and extraction scripts for web-to-markdown skill.",
   "scripts": {
     "convert": "node scripts/url_to_markdown.mjs",

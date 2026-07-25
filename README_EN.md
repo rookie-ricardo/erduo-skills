@@ -312,6 +312,10 @@ npx skills add rookie-ricardo/erduo-skills
 
 Contributions welcome! Each skill is a self-contained directory under `skills/`, with a `SKILL.md` (skill definition) and related scripts/resources.
 
+## 📄 License
+
+[MIT](LICENSE) © Rookie Ricardo
+
 [![Star History Chart](https://api.star-history.com/svg?repos=rookie-ricardo/erduo-skills&type=Date)](https://www.star-history.com/#rookie-ricardo/erduo-skills&Date)
 
 ---

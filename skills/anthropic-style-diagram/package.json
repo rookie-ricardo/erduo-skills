@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
+  "license": "MIT",
   "description": "Render semantic Anthropic-style SVG diagrams to PNG with layout auditing.",
   "scripts": {
     "render": "node scripts/render.mjs",
