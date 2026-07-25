@@ -91,7 +91,12 @@ async function loadChromium() {
   const require = createRequire(import.meta.url);
   const roots = [];
   try {
-    roots.push(execFileSync('npm', ['root', '-g'], { encoding: 'utf8' }).trim());
+    // Strip npm's own config: running under `npm --prefix <dir> run` would otherwise
+    // make "npm root -g" report that prefix instead of the real global root.
+    const env = Object.fromEntries(
+      Object.entries(process.env).filter(([key]) => !key.startsWith('npm_config_')),
+    );
+    roots.push(execFileSync('npm', ['root', '-g'], { encoding: 'utf8', env }).trim());
   } catch {
     /* npm unavailable; local resolution may still succeed */
   }
