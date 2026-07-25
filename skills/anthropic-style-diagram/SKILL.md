@@ -15,22 +15,43 @@ viewBox height by hand.
 
 ## Workflow
 
-1. **Plan before drawing.** Count the nodes. Group them into 2–3 categories — each
-   category gets one colour ramp. Decide the diagram type (see below). If the user
-   named 6+ components, split into an overview plus one diagram per sub-flow rather
-   than cramming one canvas.
+1. **Plan before drawing.** Count the nodes and group them by kind — one colour ramp
+   per kind, never one per row. Decide the diagram type (see below). If the user named
+   6+ components, split into an overview plus one diagram per sub-flow rather than
+   cramming one canvas.
 2. **Write the SVG** to a working path (scratchpad or `/tmp`), not the delivery path.
-   Follow the authoring contract below; `references/example-structural.svg` is the
-   canonical shape to imitate.
+   Follow the authoring contract below; `references/example-structural.svg` and
+   `references/example-cycle.svg` are the canonical shapes to imitate.
 3. **Render**: `node scripts/render.mjs <working.svg> -o <target.png>`.
-4. **Verify twice — measured, then seen.** Both passes are required.
-   - *Measured*: layout warnings print on stdout. Fix every one and re-render.
-   - *Seen*: read the rendered PNG back and judge what no measurement can. Is the
-     reading order unambiguous? Does every arrow land on the shape it means? Does
-     the colour grouping match the categories you intended? Is any region crowded
-     or dead? Is the diagram *about* something? Never deliver one you have not
-     looked at — a clean audit only means nothing collides.
-5. **Report** the saved path to the user.
+4. **Clear the audit.** Layout warnings print on stdout. Fix every one and re-render
+   until the run is clean. A clean run only means nothing collides — that is the
+   floor, not the bar.
+5. **Review the render yourself** against the checklist below. Any failure sends you
+   back to step 2. This step is not optional: the audit measures geometry, and almost
+   everything that makes a diagram *wrong* lives outside geometry.
+6. **Report** the saved path, and say what the review turned up.
+
+### The review checklist
+
+Read the rendered image, not your source. The source is what you meant; the image is
+what the reader gets, and only one of those can be wrong.
+
+1. **Read it cold.** Set aside what you set out to draw and say what the picture
+   actually claims. If that differs from the request, the diagram is wrong — not the
+   reader.
+2. **Trace every arrow.** Each must start and end on the shape it means, and its
+   direction must assert something true. An arrow down the page claims the lower node
+   is used by the upper one; say that claim out loud and check it. Placing a component
+   below another is an assertion, not a layout convenience.
+3. **Find the loop.** If the subject has feedback — an agent, a control system, a
+   retry path, a training cycle — locate the return edge in the image. If you cannot
+   see it, it is not there, and a one-way drawing of a loop is simply false.
+4. **Read every label.** Accurate, ≤5 words, sentence case, unclipped, and not
+   claiming more than the system does.
+5. **Check the colour.** Same colour must mean same category. If two nodes share a
+   ramp only because they were next in the list, re-assign.
+6. **Scan the whitespace.** Crowded regions and dead regions are both defects, and a
+   uniform grid of same-sized boxes means the layout is carrying no information.
 
 ## Rendering
 
@@ -121,10 +142,10 @@ neutral, structural or external nodes. Prefer purple, teal, coral and pink for g
 categories; reserve blue, green, amber and red for genuinely informational, successful,
 warning or error concepts.
 
-### Composition — what the audit cannot see
+### Composition — decide these before you draw
 
-The audit checks overflow, overlap and crossed connectors. It cannot tell you the
-diagram is boring or wrong. Check these yourself, before rendering:
+The four judgements the audit will never make for you. Get them right here, then
+confirm them against the rendered image with the review checklist above:
 
 - **Uniform grids are a failure mode.** If every tier holds the same number of
   identically sized boxes, the layout carries no information and reads as a
