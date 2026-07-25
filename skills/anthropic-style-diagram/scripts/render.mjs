@@ -117,7 +117,8 @@ async function loadChromium() {
 
 /** Everything below runs inside the page; it must be self-contained. */
 function pageScript() {
-  const SHAPES = 'rect,circle,ellipse,polygon,path,line,polyline';
+  const NODES = 'rect,circle,ellipse,polygon';
+  const SHAPES = `${NODES},path,line,polyline`;
   const INK = `${SHAPES},text,image,use`;
 
   const rendered = (svg) =>
@@ -158,33 +159,100 @@ function pageScript() {
     outer.right + tol >= inner.right &&
     outer.bottom + tol >= inner.bottom;
 
+  /**
+   * Round nodes are measured as ellipses, not as their bounding box. A ring
+   * layout puts circles on diagonals where the boxes overlap while the shapes
+   * are nowhere near each other, and a label can sit inside a circle's box yet
+   * outside the circle itself.
+   */
+  function describe(el, toUser) {
+    const box = toUser(el);
+    const tag = el.tagName.toLowerCase();
+    const round =
+      tag === 'circle' || tag === 'ellipse'
+        ? { cx: box.x + box.w / 2, cy: box.y + box.h / 2, rx: box.w / 2, ry: box.h / 2 }
+        : null;
+    return { el, box, round };
+  }
+
+  /** Ellipse radius along a direction — exact for circles. */
+  const radiusAt = ({ rx, ry }, angle) =>
+    (rx * ry) / Math.hypot(ry * Math.cos(angle), rx * Math.sin(angle));
+
+  function collide(a, b) {
+    if (a.round && b.round) {
+      const dx = b.round.cx - a.round.cx;
+      const dy = b.round.cy - a.round.cy;
+      const angle = Math.atan2(dy, dx);
+      const reach = radiusAt(a.round, angle) + radiusAt(b.round, angle);
+      return Math.hypot(dx, dy) < reach - 1;
+    }
+    return overlapArea(a.box, b.box) > 4;
+  }
+
+  /** How far a text box reaches past its owner shape, in px; 0 when it fits. */
+  function spillOf(node, t) {
+    if (node.round) {
+      const { cx, cy, rx, ry } = node.round;
+      const corners = [
+        [t.x, t.y],
+        [t.right, t.y],
+        [t.x, t.bottom],
+        [t.right, t.bottom],
+      ];
+      let worst = 0;
+      for (const [px, py] of corners) {
+        const reach = Math.hypot((px - cx) / rx, (py - cy) / ry);
+        if (reach > 1) worst = Math.max(worst, (reach - 1) * Math.min(rx, ry));
+      }
+      return worst;
+    }
+    return Math.max(node.box.x - t.x, t.right - node.box.right, node.box.y - t.y, t.bottom - node.box.bottom);
+  }
+
+  function inside(node, p, inset) {
+    if (node.round) {
+      const { cx, cy, rx, ry } = node.round;
+      if (rx <= inset || ry <= inset) return false;
+      return Math.hypot((p.x - cx) / (rx - inset), (p.y - cy) / (ry - inset)) < 1;
+    }
+    return (
+      p.x > node.box.x + inset &&
+      p.x < node.box.right - inset &&
+      p.y > node.box.y + inset &&
+      p.y < node.box.bottom - inset
+    );
+  }
+
   function audit(svg, toUser) {
     const warnings = [];
-    const rects = [...svg.querySelectorAll('rect')].filter((el) => !el.closest('defs'));
-    const boxes = rects.map((el) => ({ el, box: toUser(el) }));
+    const nodes = [...svg.querySelectorAll(NODES)]
+      .filter((el) => !el.closest('defs'))
+      .map((el) => describe(el, toUser));
 
     for (const text of svg.querySelectorAll('text')) {
-      const owner = text.closest('g')?.querySelector(':scope > rect');
+      const owner = text.closest('g')?.querySelector(`:scope > :is(${NODES})`);
       if (!owner) continue;
-      const t = toUser(text);
-      const r = toUser(owner);
-      const spill = Math.max(r.x - t.x, t.right - r.right, r.y - t.y, t.bottom - r.bottom);
+      const node = nodes.find((n) => n.el === owner) ?? describe(owner, toUser);
+      const spill = spillOf(node, toUser(text));
       if (spill > 1) {
+        const b = node.box;
         warnings.push(
-          `text overflow: "${text.textContent.trim()}" spills ${spill.toFixed(0)}px outside its box ` +
-            `(box ${r.w.toFixed(0)}x${r.h.toFixed(0)} at ${r.x.toFixed(0)},${r.y.toFixed(0)}) — widen the rect or shorten the label`,
+          `text overflow: "${text.textContent.trim()}" spills ${spill.toFixed(0)}px outside its ` +
+            `<${owner.tagName.toLowerCase()}> (${b.w.toFixed(0)}x${b.h.toFixed(0)} at ${b.x.toFixed(0)},${b.y.toFixed(0)}) ` +
+            `— enlarge the shape or shorten the label`,
         );
       }
     }
 
-    for (let i = 0; i < boxes.length; i++) {
-      for (let j = i + 1; j < boxes.length; j++) {
-        const a = boxes[i];
-        const b = boxes[j];
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        const a = nodes[i];
+        const b = nodes[j];
         if (contains(a.box, b.box) || contains(b.box, a.box)) continue;
-        if (overlapArea(a.box, b.box) > 4) {
+        if (collide(a, b)) {
           warnings.push(
-            `boxes overlap: ${label(a.el)} and ${label(b.el)} intersect — increase the gap or shrink one box`,
+            `nodes overlap: ${label(a.el)} and ${label(b.el)} intersect — increase the gap or shrink one`,
           );
         }
       }
@@ -203,17 +271,11 @@ function pageScript() {
       };
       const ends = [at(0), at(1)];
 
-      for (const { el, box } of boxes) {
-        const touchesEnd = ends.some(
-          (p) => p.x >= box.x - 6 && p.x <= box.right + 6 && p.y >= box.y - 6 && p.y <= box.bottom + 6,
-        );
-        if (touchesEnd) continue;
+      for (const node of nodes) {
+        if (ends.some((p) => inside(node, p, -6))) continue;
         for (let t = 0.12; t <= 0.88; t += 0.04) {
-          const p = at(t);
-          if (p.x > box.x + 2 && p.x < box.right - 2 && p.y > box.y + 2 && p.y < box.bottom - 2) {
-            warnings.push(
-              `connector crosses ${label(el)} — route around it with an L-shaped path`,
-            );
+          if (inside(node, at(t), 2)) {
+            warnings.push(`connector crosses ${label(node.el)} — route around it`);
             break;
           }
         }

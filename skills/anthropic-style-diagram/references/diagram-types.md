@@ -80,14 +80,35 @@ with things and reads as ambiguous.
 
 ### Cycles
 
-Do not lay stages around a ring. Every spacing rule here is Cartesian, so a ring
-produces satellite boxes overlapping the stages they feed and tangential arrows that
-point nowhere. Draw the stages in a line and convey the loop with a `leader` path
-returning along the outside:
+Default to a line of stages with a `leader` path returning along the outside. It
+keeps every Cartesian spacing rule, reads unambiguously left to right, and leaves
+room for the satellite nodes a stage feeds:
 
 ```svg
 <path class="leader" d="M 640 337 L 657 337 L 657 188 L 640 188" marker-end="url(#arrow)"/>
 ```
+
+Lay the stages around a ring when the cycle has **no natural entry point** — a
+control loop, a lifecycle, a feedback process a reader could join at any stage —
+and only up to 6 nodes. Past six the labels crowd, the arcs shorten, and the
+direction of travel stops being readable. A ring with an obvious start and end is
+a line pretending to be a circle; draw the line.
+
+Ring geometry — `n` nodes of radius `r` on a circle of radius `R` centred at
+`(cx, cy)`:
+
+- node `i` sits at `θᵢ = -90° + 360°·i/n`, putting the first node at the top:
+  `x = cx + R·cos θᵢ`, `y = cy + R·sin θᵢ`
+- `R ≥ r / sin(180°/n) + 12` keeps neighbours from touching
+- the arc from node `i` to `i+1` clears both shapes by running from `θᵢ + gap` to
+  `θᵢ₊₁ − gap`, where `gap = asin(r/R) + 5°`
+- draw it as `M x₀ y₀ A R R 0 0 1 x₁ y₁` — sweep flag `1` travels clockwise
+- keep the centre for the cycle's name, never for a further node
+
+Text inside a circle has far less room than its bounding box suggests: a label fits
+only if all four of its corners stay inside the shape. Budget about `1.4·r` of
+usable width and keep to a 2-word title plus a short subtitle.
+`references/example-cycle.svg` is a complete five-stage ring.
 
 ## Structural
 

@@ -1,0 +1,41 @@
+<svg viewBox="0 0 620 600" role="img">
+  <title>Agent 循环原理</title>
+  <desc>感知、规划、行动、观察、反思五个阶段沿环形依次推进，反思之后回到感知，循环往复直至任务完成。</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+  </defs>
+  <path class="arr" fill="none" d="M 390.9 128.1 A 190 190 0 0 1 448.5 170.0" marker-end="url(#arrow)"/>
+  <path class="arr" fill="none" d="M 498.5 323.8 A 190 190 0 0 1 476.5 391.6" marker-end="url(#arrow)"/>
+  <path class="arr" fill="none" d="M 345.7 486.6 A 190 190 0 0 1 274.3 486.6" marker-end="url(#arrow)"/>
+  <path class="arr" fill="none" d="M 143.5 391.6 A 190 190 0 0 1 121.5 323.8" marker-end="url(#arrow)"/>
+  <path class="arr" fill="none" d="M 171.5 170.0 A 190 190 0 0 1 229.1 128.1" marker-end="url(#arrow)"/>
+  <text class="th" x="310" y="292" text-anchor="middle" dominant-baseline="central">Agent 循环</text>
+  <text class="ts" x="310" y="314" text-anchor="middle" dominant-baseline="central">直到任务完成</text>
+  <g class="node c-teal">
+    <circle cx="310.0" cy="110.0" r="64"/>
+    <text class="th" x="310.0" y="101.0" text-anchor="middle" dominant-baseline="central">感知</text>
+    <text class="ts" x="310.0" y="123.0" text-anchor="middle" dominant-baseline="central">读取输入</text>
+  </g>
+  <g class="node c-teal">
+    <circle cx="490.7" cy="241.3" r="64"/>
+    <text class="th" x="490.7" y="232.3" text-anchor="middle" dominant-baseline="central">规划</text>
+    <text class="ts" x="490.7" y="254.3" text-anchor="middle" dominant-baseline="central">拆解目标</text>
+  </g>
+  <g class="node c-teal">
+    <circle cx="421.7" cy="453.7" r="64"/>
+    <text class="th" x="421.7" y="444.7" text-anchor="middle" dominant-baseline="central">行动</text>
+    <text class="ts" x="421.7" y="466.7" text-anchor="middle" dominant-baseline="central">调用工具</text>
+  </g>
+  <g class="node c-teal">
+    <circle cx="198.3" cy="453.7" r="64"/>
+    <text class="th" x="198.3" y="444.7" text-anchor="middle" dominant-baseline="central">观察</text>
+    <text class="ts" x="198.3" y="466.7" text-anchor="middle" dominant-baseline="central">读取结果</text>
+  </g>
+  <g class="node c-teal">
+    <circle cx="129.3" cy="241.3" r="64"/>
+    <text class="th" x="129.3" y="232.3" text-anchor="middle" dominant-baseline="central">反思</text>
+    <text class="ts" x="129.3" y="254.3" text-anchor="middle" dominant-baseline="central">修正策略</text>
+  </g>
+</svg>

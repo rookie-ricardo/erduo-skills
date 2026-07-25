@@ -23,8 +23,13 @@ viewBox height by hand.
    Follow the authoring contract below; `references/example-structural.svg` is the
    canonical shape to imitate.
 3. **Render**: `node scripts/render.mjs <working.svg> -o <target.png>`.
-4. **Look at the PNG.** Read the image file back. Layout warnings appear on stdout —
-   fix them and re-render. Do not deliver a diagram you have not seen.
+4. **Verify twice — measured, then seen.** Both passes are required.
+   - *Measured*: layout warnings print on stdout. Fix every one and re-render.
+   - *Seen*: read the rendered PNG back and judge what no measurement can. Is the
+     reading order unambiguous? Does every arrow land on the shape it means? Does
+     the colour grouping match the categories you intended? Is any region crowded
+     or dead? Is the diagram *about* something? Never deliver one you have not
+     looked at — a clean audit only means nothing collides.
 5. **Report** the saved path to the user.
 
 ## Rendering
@@ -45,10 +50,12 @@ node scripts/render.mjs diagram.svg -o ~/Downloads/architecture.png
 | `--check` | — | Audit only, write nothing; exits non-zero when problems exist |
 | `--json` | — | Machine-readable report |
 
-The audit catches the three *mechanical* failure modes: text spilling out of its box,
-boxes overlapping, and connectors slicing through unrelated nodes. A clean run prints
-only the output paths. It says nothing about whether the diagram is well composed or
-even correct — see "Composition" below, and never treat a clean audit as approval.
+The audit catches the three *mechanical* failure modes: text spilling out of its shape,
+nodes overlapping, and connectors slicing through unrelated nodes. Round nodes are
+measured as ellipses rather than as their bounding box, so ring layouts are checked as
+strictly as grids. A clean run prints only the output paths. It says nothing about
+whether the diagram is well composed or even correct — see "Composition" below, and
+never treat a clean audit as approval.
 
 First run needs Playwright. It is picked up from the skill, the project, or the global
 npm root; if missing, `npm install` in this directory.
@@ -126,7 +133,9 @@ diagram is boring or wrong. Check these yourself, before rendering:
   like a structure rather than a table.
 - **Find the feedback edges.** Anything with a loop in it — an agent, a control system,
   a retry path, a training cycle — drawn as a one-way stack is not simplified, it is
-  wrong. Route the return edge as a `leader` path around the outside.
+  wrong. Route the return edge as a `leader` path around the outside, or lay the
+  stages in a ring when the cycle has no natural entry point; `references/diagram-types.md`
+  carries the polar geometry for that.
 - **Not everything is a stack.** Before placing a box below another, say the dependency
   out loud: "the lower one is used by the upper one." A component the core talks to
   bidirectionally belongs *beside* it with a two-headed arrow
