@@ -316,10 +316,9 @@ Contributions welcome! Each skill is a self-contained directory under `skills/`,
 
 [MIT](LICENSE) © Erduo
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/star-history-dark.svg">
-  <img alt="Star history" src="assets/star-history.svg" width="840">
-</picture>
+<a href="https://www.star-history.com/#rookie-ricardo/erduo-skills&amp;Date">
+  <img alt="Star History Chart" src="assets/star-history.png" width="720">
+</a>
 
 ---
 
