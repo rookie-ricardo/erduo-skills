@@ -316,7 +316,12 @@ Contributions welcome! Each skill is a self-contained directory under `skills/`,
 
 [MIT](LICENSE) © Erduo
 
-[![Star History Chart](https://api.star-history.com/svg?repos=rookie-ricardo/erduo-skills&type=Date)](https://www.star-history.com/#rookie-ricardo/erduo-skills&Date)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/star-history-dark.svg">
+  <img alt="Star history" src="assets/star-history.svg" width="840">
+</picture>
+
+<sub>GitHub now restricts the stargazers list to repository admins, so third-party chart services can no longer read it anonymously — this chart is self-generated. Refresh with <code>node scripts/star-history.mjs</code></sub>
 
 ---
 

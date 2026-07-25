@@ -317,7 +317,12 @@ npx skills add rookie-ricardo/erduo-skills
 
 [MIT](LICENSE) © Erduo
 
-[![Star History Chart](https://api.star-history.com/svg?repos=rookie-ricardo/erduo-skills&type=Date)](https://www.star-history.com/#rookie-ricardo/erduo-skills&Date)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/star-history-dark.svg">
+  <img alt="Star history" src="assets/star-history.svg" width="840">
+</picture>
+
+<sub>GitHub 已将 stargazers 列表限制为仓库管理员可见，第三方图表服务无法再匿名读取，因此改为自建。更新：<code>node scripts/star-history.mjs</code></sub>
 
 ---
 
