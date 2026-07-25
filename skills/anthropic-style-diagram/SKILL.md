@@ -45,9 +45,10 @@ node scripts/render.mjs diagram.svg -o ~/Downloads/architecture.png
 | `--check` | — | Audit only, write nothing; exits non-zero when problems exist |
 | `--json` | — | Machine-readable report |
 
-The audit catches the three failure modes that actually ruin diagrams: text spilling
-out of its box, boxes overlapping, and connectors slicing through unrelated nodes.
-A clean run prints only the output paths.
+The audit catches the three *mechanical* failure modes: text spilling out of its box,
+boxes overlapping, and connectors slicing through unrelated nodes. A clean run prints
+only the output paths. It says nothing about whether the diagram is well composed or
+even correct — see "Composition" below, and never treat a clean audit as approval.
 
 First run needs Playwright. It is picked up from the skill, the project, or the global
 npm root; if missing, `npm install` in this directory.
@@ -96,12 +97,43 @@ selectors: an extra nested `<g>` breaks the fill.
 
 Every `<text>` needs `t`, `ts` or `th` — an unclassed one renders as raw black.
 
-### Colour means category, never sequence
+### Colour the nodes, not just the containers
 
-Nodes of the same kind share a ramp. Two or three ramps per diagram, not six. `c-gray`
-for neutral or structural nodes. Prefer purple, teal, coral and pink for generic
+**Every node carries a ramp by default.** Nodes of the same kind share one; a diagram
+where the boxes are all neutral and only the containers are tinted looks drained and
+flat — that is the single most common way these diagrams go ugly.
+
+`class="box"` is neutral on purpose, and it has exactly one job: homogeneous sub-parts
+*inside* one coloured container, where the container already carries the category and
+tinting the children would invent distinctions that do not exist. Do not generalise that
+pattern to a whole diagram.
+
+One ramp per category, not per row — colour must never track sequence. A six-category
+diagram legitimately uses six ramps; a three-step flow uses one or two. `c-gray` for
+neutral, structural or external nodes. Prefer purple, teal, coral and pink for generic
 categories; reserve blue, green, amber and red for genuinely informational, successful,
 warning or error concepts.
+
+### Composition — what the audit cannot see
+
+The audit checks overflow, overlap and crossed connectors. It cannot tell you the
+diagram is boring or wrong. Check these yourself, before rendering:
+
+- **Uniform grids are a failure mode.** If every tier holds the same number of
+  identically sized boxes, the layout carries no information and reads as a
+  spreadsheet. Vary box widths to match their content and vary the count per tier.
+  Convergence, branching and a full-width emphasis row are what make a diagram look
+  like a structure rather than a table.
+- **Find the feedback edges.** Anything with a loop in it — an agent, a control system,
+  a retry path, a training cycle — drawn as a one-way stack is not simplified, it is
+  wrong. Route the return edge as a `leader` path around the outside.
+- **Not everything is a stack.** Before placing a box below another, say the dependency
+  out loud: "the lower one is used by the upper one." A component the core talks to
+  bidirectionally belongs *beside* it with a two-headed arrow
+  (`marker-start` and `marker-end`), not underneath it.
+- **Find the one thing the diagram is about** and give it more weight — a container, a
+  wider box, the only saturated colour in a neutral field. A diagram where everything
+  is equally prominent has no subject.
 
 ### Geometry
 

@@ -50,10 +50,13 @@ step 2 amber, step 3 red is noise. Instead:
 
 - All nodes of one kind share one ramp: every immune cell purple, every pathogen coral,
   every outcome teal.
-- `c-gray` for neutral, structural or generic nodes — start states, end states,
-  plumbing.
-- Two or three ramps per diagram. A diagram in gray + purple + teal beats one using
-  every ramp.
+- Nodes are coloured by default. Leaving every node neutral and tinting only the
+  containers drains the diagram — `box` exists for homogeneous sub-parts inside one
+  container, nothing more.
+- `c-gray` for neutral, structural or external nodes — start states, end states,
+  plumbing, the outside world.
+- One ramp per category. Two or three is right for a simple flow; a diagram with six
+  real categories may use six. What is forbidden is a ramp per row.
 - Prefer purple, teal, coral and pink for generic categories. Blue, green, amber and red
   carry strong UI connotations (info, success, warning, error) — spend them only when
   the node genuinely means that.

@@ -29,9 +29,11 @@ between.
 Hard limits, checked before drawing:
 
 - Subtitles ≤5 words.
-- 2–3 colour ramps.
+- One ramp per category — 2–3 in a simple flow, more when the subject genuinely has
+  more categories. Never one ramp per row.
 - 4–5 nodes per tier at full width (~140px each). Five or more means shrink to ≤110px,
-  wrap to two rows, or split the diagram.
+  wrap to two rows, or split the diagram. Do not give every tier the same count — a
+  uniform grid reads as a table, not a structure.
 - 3–6 nodes total in a flowchart.
 - Containment at most 3 levels deep.
 
