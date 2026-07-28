@@ -37,10 +37,24 @@ Return metadata with markdown:
 node scripts/url_to_markdown.mjs <url> --json
 ```
 
+Download images and replace URLs with local paths:
+
+```bash
+node scripts/url_to_markdown.mjs <url> --download-images
+node scripts/url_to_markdown.mjs <url> --download-images --images-dir ./my-images
+```
+
 Force special-site browser extraction:
 
 ```bash
 node scripts/fetch_special_sites.mjs <url> --json
+```
+
+Standalone image download (from existing markdown file or content):
+
+```bash
+node scripts/download_images.mjs <markdown_or_file> [output_dir]
+node scripts/download_images.mjs ./input.md ./output-images --json
 ```
 
 ## Routing Policy
@@ -80,9 +94,17 @@ When `--json` is used, return:
 - `resolvedUrl`: normalized/final URL.
 - `markdown`: extracted markdown body.
 
+When `--download-images` is used, additional fields are returned:
+
+- `downloadedImages`: array of `{url, filename}` for successfully downloaded images.
+- `failedImages`: array of `{url, error}` for images that failed to download.
+- `imagesLocalPath`: directory path where images are saved.
+- `markdown`: modified markdown with URLs replaced by local filenames.
+
 ## Resources
 
 - [references/routing-and-notes.md](references/routing-and-notes.md): domain routing rules and operational caveats.
 - `scripts/url_to_markdown.mjs`: primary entrypoint.
 - `scripts/fetch_special_sites_http.mjs`: WeChat/Zhihu/Feishu HTTP impersonation fetcher (`cuimp` JS).
 - `scripts/fetch_special_sites.mjs`: two-stage extractor (HTTP-first, browser-fallback).
+- `scripts/download_images.mjs`: standalone image download utility - extracts image URLs from markdown, downloads them to a local directory, and returns markdown with URLs replaced by local paths.

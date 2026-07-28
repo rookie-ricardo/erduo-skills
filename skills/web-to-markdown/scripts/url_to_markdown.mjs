@@ -27,7 +27,9 @@ function parseArgs(argv) {
   const args = {
     url: '',
     timeoutMs: DEFAULT_TIMEOUT_MS,
-    json: false
+    json: false,
+    downloadImages: false,
+    imagesOutputDir: ''
   };
 
   for (let i = 2; i < argv.length; i += 1) {
@@ -36,6 +38,17 @@ function parseArgs(argv) {
 
     if (token === '--json') {
       args.json = true;
+      continue;
+    }
+
+    if (token === '--download-images') {
+      args.downloadImages = true;
+      continue;
+    }
+
+    if (token === '--images-dir') {
+      args.imagesOutputDir = argv[i + 1] || '';
+      i += 1;
       continue;
     }
 
@@ -58,7 +71,7 @@ function parseArgs(argv) {
   }
 
   if (!args.url) {
-    throw new Error('Usage: node scripts/url_to_markdown.mjs <url> [--json] [--timeout-ms 30000]');
+    throw new Error('Usage: node scripts/url_to_markdown.mjs <url> [--json] [--timeout-ms 30000] [--download-images] [--images-dir <dir>]');
   }
 
   return args;
@@ -257,6 +270,32 @@ async function main() {
   try {
     const args = parseArgs(process.argv);
     const result = await urlToMarkdown(args.url, { timeoutMs: args.timeoutMs });
+
+    // If --download-images flag is set, download images and replace URLs
+    if (args.downloadImages) {
+      const { downloadImagesAndReplace } = await import('./download_images.mjs');
+      
+      // Determine output directory for images
+      let imagesDir = args.imagesOutputDir;
+      if (!imagesDir) {
+        // Create a directory based on the normalized/resolved URL hostname
+        const urlObj = new URL(result.resolvedUrl || normalizeUrl(args.url).toString());
+        const sanitizedHost = urlObj.hostname.replace(/[^a-zA-Z0-9]/g, '_');
+        const timestamp = Date.now();
+        imagesDir = `./images_${sanitizedHost}_${timestamp}`;
+      }
+
+      const imageResult = await downloadImagesAndReplace(result.markdown, imagesDir, {
+        pageUrl: result.resolvedUrl || normalizeUrl(args.url).toString(),
+        timeoutMs: args.timeoutMs
+      });
+
+      // Add image download info to result
+      result.downloadedImages = imageResult.downloadedImages;
+      result.failedImages = imageResult.failedImages;
+      result.imagesLocalPath = imageResult.localPath;
+      result.markdown = imageResult.markdown;
+    }
 
     if (args.json) {
       process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
